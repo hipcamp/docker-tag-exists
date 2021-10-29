@@ -105,8 +105,8 @@ const dockerhub_service_1 = __nccwpck_require__(8269);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            let exactMatch = false;
-            let prefixMatch = false;
+            let exactMatch = 'false';
+            let prefixMatch = 'false';
             const username = core.getInput('username');
             const password = core.getInput('password');
             const namespace = core.getInput('namespace');
@@ -114,13 +114,16 @@ function run() {
             const tag = core.getInput('tag');
             const dockerhub = new dockerhub_service_1.DockerHubService(username, password);
             const tags = yield dockerhub.getTags(namespace, repository);
+            core.debug(JSON.stringify(tags));
             for (const dockerTag of tags) {
                 if (dockerTag.toLowerCase() === tag.toLowerCase()) {
-                    exactMatch = true;
+                    core.debug(`(Exact Match) Tag Given: ${tag} -> Tag Matched: ${tag}`);
+                    exactMatch = 'true';
                 }
                 if (dockerTag.toLowerCase().startsWith(tag.toLowerCase()) ||
                     tag.toLowerCase().startsWith(dockerTag.toLowerCase())) {
-                    prefixMatch = true;
+                    core.debug(`(Prefix Match) Tag Given: ${tag} -> Tag Matched: ${tag}`);
+                    prefixMatch = 'true';
                 }
             }
             core.setOutput('exact-match', exactMatch);
