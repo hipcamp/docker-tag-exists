@@ -1,16 +1,33 @@
 import * as core from '@actions/core'
-import {wait} from './wait'
+import {DockerHubService} from './dockerhub.service'
 
 async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
-    core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_STEP_DEBUG` to true
+    let exactMatch = false
+    let prefixMatch = false
+    const username: string = core.getInput('username')
+    const password: string = core.getInput('password')
+    const namespace: string = core.getInput('namespace')
+    const repository: string = core.getInput('repository')
+    const tag: string = core.getInput('tag')
 
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    const dockerhub: DockerHubService = new DockerHubService(username, password)
+    const tags: string[] = await dockerhub.getTags(namespace, repository)
 
-    core.setOutput('time', new Date().toTimeString())
+    for (const dockerTag of tags) {
+      if (dockerTag.toLowerCase() === tag.toLowerCase()) {
+        exactMatch = true
+      }
+      if (
+        dockerTag.toLowerCase().startsWith(tag.toLowerCase()) ||
+        tag.toLowerCase().startsWith(dockerTag.toLowerCase())
+      ) {
+        prefixMatch = true
+      }
+    }
+
+    core.setOutput('exact-match', exactMatch)
+    core.setOutput('prefix-match', prefixMatch)
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
   }
