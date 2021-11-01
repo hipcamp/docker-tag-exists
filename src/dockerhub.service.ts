@@ -1,5 +1,5 @@
 /* eslint-disable filenames/match-regex */
-import axios, {AxiosResponse} from 'axios'
+import axios, {AxiosRequestHeaders, AxiosResponse} from 'axios'
 
 export class DockerHubService {
   private readonly dockerURL = 'https://hub.docker.com'
@@ -12,46 +12,31 @@ export class DockerHubService {
   }
 
   private async getAuthenticationToken(): Promise<string> {
-    const result: AxiosResponse = await axios.post(
-      `${this.dockerURL}/v2/users/login`,
-      {
-        username: this.username,
-        password: this.password
-      }
-    )
-
-    return result.data.token
+    if (this.username && this.password) {
+      const result: AxiosResponse = await axios.post(
+        `${this.dockerURL}/v2/users/login`,
+        {
+          username: this.username,
+          password: this.password
+        }
+      )
+      return result.data.token
+    } else {
+      return ''
+    }
   }
 
-  async getTags(
-    namespace: string,
-    repository: string,
-    nextURL: string | null = null
-  ): Promise<string[]> {
+  async tagExists(image: string, tag: string): Promise<boolean> {
     const token: string = await this.getAuthenticationToken()
-    const url: string = nextURL
-      ? nextURL
-      : `${this.dockerURL}/v2/namespaces/${namespace}/repositories/${repository}/images`
+    const url = `${this.dockerURL}/v2/repositories/${image}/tags/${tag}`
+    const headers: AxiosRequestHeaders = {}
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
     const result: AxiosResponse = await axios.get(url, {
-      headers: {Authorization: `Bearer ${token}`}
+      headers
     })
-
-    let tags: string[] = []
-
-    for (const image of result.data.results) {
-      for (const tag of image.tags) {
-        if (tag.is_current) {
-          tags.push(tag.tag)
-        }
-      }
-    }
-
-    if (result.data.next) {
-      tags = tags.concat(
-        await this.getTags(namespace, repository, result.data.next)
-      )
-    }
-
-    return tags
+    return result.status === 200
   }
 }

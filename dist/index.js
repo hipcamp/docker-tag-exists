@@ -30,34 +30,30 @@ class DockerHubService {
     }
     getAuthenticationToken() {
         return __awaiter(this, void 0, void 0, function* () {
-            const result = yield axios_1.default.post(`${this.dockerURL}/v2/users/login`, {
-                username: this.username,
-                password: this.password
-            });
-            return result.data.token;
+            if (this.username && this.password) {
+                const result = yield axios_1.default.post(`${this.dockerURL}/v2/users/login`, {
+                    username: this.username,
+                    password: this.password
+                });
+                return result.data.token;
+            }
+            else {
+                return '';
+            }
         });
     }
-    getTags(namespace, repository, nextURL = null) {
+    tagExists(image, tag) {
         return __awaiter(this, void 0, void 0, function* () {
             const token = yield this.getAuthenticationToken();
-            const url = nextURL
-                ? nextURL
-                : `${this.dockerURL}/v2/namespaces/${namespace}/repositories/${repository}/images`;
+            const url = `${this.dockerURL}/v2/repositories/${image}/tags/${tag}`;
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
             const result = yield axios_1.default.get(url, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers
             });
-            let tags = [];
-            for (const image of result.data.results) {
-                for (const tag of image.tags) {
-                    if (tag.is_current) {
-                        tags.push(tag.tag);
-                    }
-                }
-            }
-            if (result.data.next) {
-                tags = tags.concat(yield this.getTags(namespace, repository, result.data.next));
-            }
-            return tags;
+            return result.status === 200;
         });
     }
 }
@@ -105,29 +101,12 @@ const dockerhub_service_1 = __nccwpck_require__(8269);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            let exactMatch = 'false';
-            let prefixMatch = 'false';
             const username = core.getInput('username');
             const password = core.getInput('password');
-            const namespace = core.getInput('namespace');
-            const repository = core.getInput('repository');
+            const image = core.getInput('image');
             const tag = core.getInput('tag');
             const dockerhub = new dockerhub_service_1.DockerHubService(username, password);
-            const tags = yield dockerhub.getTags(namespace, repository);
-            core.debug(JSON.stringify(tags));
-            for (const dockerTag of tags) {
-                if (dockerTag.toLowerCase() === tag.toLowerCase()) {
-                    core.debug(`(Exact Match) Tag Given: ${tag} -> Tag Matched: ${tag}`);
-                    exactMatch = 'true';
-                }
-                if (dockerTag.toLowerCase().startsWith(tag.toLowerCase()) ||
-                    tag.toLowerCase().startsWith(dockerTag.toLowerCase())) {
-                    core.debug(`(Prefix Match) Tag Given: ${tag} -> Tag Matched: ${tag}`);
-                    prefixMatch = 'true';
-                }
-            }
-            core.setOutput('exact-match', exactMatch);
-            core.setOutput('prefix-match', prefixMatch);
+            core.setOutput('tag-exists', yield dockerhub.tagExists(image, tag));
         }
         catch (error) {
             if (error instanceof Error)

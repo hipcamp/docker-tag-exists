@@ -3,25 +3,22 @@ description: 'Custom GitHub Action to check if a tag exists on a Docker Reposito
 author: 'Hipcamp'
 inputs:
   username:
-    required: true
+    required: false
     description: 'dockerhub username'
+    default: ''
   password:
-    required: true
+    required: false
     description: 'dockerhub password'
-  namespace:
+    default: ''
+  image:
     required: true
-    description: 'docker namespace'
-  repository:
-    required: true
-    description: 'docker repository'
+    description: 'docker image'
   tag:
     required: true
     description: 'tag to check'
 outputs:
-  exact-match:
+  tag-exists:
     description: 'tag has exact match'
-  prefix-match:
-    description: 'tag matches as prefix'
 runs:
   using: 'node12'
   main: 'dist/index.js'
