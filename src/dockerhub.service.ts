@@ -34,8 +34,12 @@ export class DockerHubService {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     }
+
     const result: AxiosResponse = await axios.get(url, {
-      headers
+      headers,
+      validateStatus: (status: number) => {
+        return status < 500
+      }
     })
     return result.status === 200
   }

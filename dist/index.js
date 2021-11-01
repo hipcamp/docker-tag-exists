@@ -51,7 +51,10 @@ class DockerHubService {
                 headers['Authorization'] = `Bearer ${token}`;
             }
             const result = yield axios_1.default.get(url, {
-                headers
+                headers,
+                validateStatus: (status) => {
+                    return status < 500;
+                }
             });
             return result.status === 200;
         });
