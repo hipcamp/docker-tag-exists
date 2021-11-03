@@ -1,20 +1,48 @@
-<p align="center">
-  <a href="https://github.com/actions/typescript-action/actions"><img alt="typescript-action status" src="https://github.com/actions/typescript-action/workflows/build-test/badge.svg"></a>
-</p>
+## Usage
 
-# Create a JavaScript Action using TypeScript
+### Pre-requisites
+Create a workflow `.yml` file in your repositories `.github/workflows` directory. An [example workflow](#example-workflow) is available below. For more information, reference the GitHub Help Documentation for [Creating a workflow file](https://help.github.com/en/articles/configuring-a-workflow#creating-a-workflow-file).
 
-Use this template to bootstrap the creation of a TypeScript action.:rocket:
+### Inputs
 
-This template includes compilation support, tests, a validation workflow, publishing, and versioning guidance.  
+* `username` - dockerhub username *OPTIONAL*
+* `password` - dockerhub password *OPTIONAL*
+* `image` - docker image
+* `tag` - docker image tag
 
-If you are new, there's also a simpler introduction.  See the [Hello World JavaScript Action](https://github.com/actions/hello-world-javascript-action)
+### Outputs
 
-## Create an action from this template
+* `tag-exists` - if that tag exists or not
 
-Click the `Use this Template` and provide the new repo details for your action
+### Example Workflow
 
-## Code in Main
+```yaml
+name: Use Self-Hosted Runners
+on: push
+jobs:
+  check-for-existing-docker-image:
+    name: Check Docker for Matching Tag
+    runs-on: ubuntu-latest
+    needs: start-self-hosted-runners
+    outputs:
+      tag-exists: ${{steps.check-docker.outputs.tag-exists}}
+    steps:
+      - id: check-docker
+        name: Check Docker for Tag
+        uses: hipcamp/docker-tag-exists@v1
+        with:
+          image: library/ubuntu
+          tag: 20.04
+  build-and-deploy-docker-image:
+    name: Build and Deploy Docker Image
+    runs-on: ubuntu-latest
+    needs: check-for-existing-docker-image
+    if: needs.check-for-existing-docker-image.outputs.tag-exists != 'true'
+    steps:
+      - run: echo "Build and Deploy Docker Image"
+```
+
+## How to Contribute
 
 > First, you'll need to have a reasonably modern version of `node` handy. This won't work with versions older than 9, for instance.
 
@@ -42,7 +70,7 @@ $ npm test
 
 ## Change action.yml
 
-The action.yml defines the inputs and output for your action.
+The action.yml contains defines the inputs and output for your action.
 
 Update the action.yml with your name, description, inputs and outputs for your action.
 
@@ -70,36 +98,18 @@ run()
 
 See the [toolkit documentation](https://github.com/actions/toolkit/blob/master/README.md#packages) for the various packages.
 
-## Publish to a distribution branch
+## Publish to a Distribution Branch
 
 Actions are run from GitHub repos so we will checkin the packed dist folder. 
 
-Then run [ncc](https://github.com/zeit/ncc) and push the results:
 ```bash
-$ npm run package
-$ git add dist
-$ git commit -a -m "prod dependencies"
-$ git push origin releases/v1
+$ npm run all
+$ git add -A
+$ git commit -m "your commit message"
+$ git tag v[version from package.json]
+$ git push origin v[version from package.json]
 ```
-
-Note: We recommend using the `--license` option for ncc, which will create a license file for all of the production node modules used in your project.
 
 Your action is now published! :rocket: 
 
 See the [versioning documentation](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-
-## Validate
-
-You can now validate the action by referencing `./` in a workflow in your repo (see [test.yml](.github/workflows/test.yml))
-
-```yaml
-uses: ./
-with:
-  milliseconds: 1000
-```
-
-See the [actions tab](https://github.com/actions/typescript-action/actions) for runs of this action! :rocket:
-
-## Usage:
-
-After testing you can [create a v1 tag](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md) to reference the stable and latest V1 action
